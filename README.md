@@ -136,7 +136,7 @@ python gui.py
 |---------|---------|---------|
 | `pymediainfo` | ≥6.0.0 | Extracts metadata from video files (duration, codecs, etc.) |
 | `lxml` | ≥4.9.0 | Parses NFO XML files for metadata |
-| `PySimpleGUI` | ≥4.60.0 | Creates cross-platform graphical interface |
+| `tkinter` | Built-in | Python's standard GUI toolkit (included with Python) |
 
 ## Usage
 
