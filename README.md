@@ -65,7 +65,6 @@ Then displays everything organized by course with clear source attribution for e
 - Python 3.7+
 - `pymediainfo` - for extracting video file metadata
 - `lxml` - for parsing NFO XML files
-- `PySimpleGUI` - for the graphical user interface
 
 ### System Dependencies
 
