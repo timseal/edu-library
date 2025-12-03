@@ -27,12 +27,14 @@ Then displays everything organized by course with clear source attribution for e
 
 - **Recursive directory scanning** - Finds all courses and lessons in your library
 - **Multi-source metadata extraction** - Prioritizes: NFO files → embedded tags → filenames → directory names
+- **Flexible NFO naming** - Finds any `.nfo` file in course/lesson directories, not just specific names
 - **Intelligent filename parsing** - Extracts lesson titles from common formats:
   - "Lesson 5 - Introduction to Python" → "Introduction to Python"
   - "05 - Title" → "Title"
   - "Title Only" → "Title Only"
 - **Duration extraction** - Reads video duration from file metadata
 - **Source attribution** - Shows where each piece of metadata came from (NFO, file-tags, filename, dir-name)
+- **SQLite database storage** - Persists all metadata for querying and analysis
 - **Completion tracking** - Reports which courses/lessons have complete metadata
 - **Performance timing** - Shows how long each scan takes
 - **Terminal output** - Clean, organized display grouped by course
@@ -57,10 +59,41 @@ pip install -r requirements.txt
 python edu_scanner.py
 ```
 
-This scans `/Volumes/learning` (the configured library directory) and displays:
-1. All courses found with their metadata
-2. All lessons in each course with titles, durations, and metadata sources
-3. Summary statistics on metadata completeness
+This scans `/Volumes/learning` (the default library directory) and stores results in `library.db`.
+
+### Custom Library Path
+
+```bash
+python edu_scanner.py --library-root=/path/to/library
+```
+
+### Using a Different Database
+
+```bash
+python edu_scanner.py --db=/path/to/custom.db
+```
+
+### Clear Database Before Scanning
+
+```bash
+python edu_scanner.py --clear-db
+```
+
+### Get Help
+
+```bash
+python edu_scanner.py --help
+```
+
+### Output
+
+The scanner displays:
+
+1. Scan progress with timing information
+2. All courses found with their metadata
+3. All lessons in each course with titles, durations, and metadata sources
+4. Summary statistics on metadata completeness
+5. Database statistics (courses stored, lessons stored, etc.)
 
 ### Understanding the Output
 
@@ -92,6 +125,9 @@ edu-library/
 ├── README.md                 # This file
 ├── requirements.txt          # Python dependencies
 ├── edu_scanner.py           # Main scanner script
+├── database.py              # SQLite database module
+├── .gitignore               # Git ignore rules
+├── library.db               # Main database (created on first run)
 └── test_data/               # Test course structure for development
     ├── Advanced_JavaScript_2023/
     ├── Python_Basics_2024/
@@ -102,15 +138,16 @@ edu-library/
 
 ### Scanning Process
 
-1. **Directory Traversal** - Recursively walks through library directories
+1. **Directory Traversal** - Recursively walks through library directories using `os.walk()`
 2. **Course Detection** - Identifies directories containing video files as courses
 3. **Lesson Discovery** - Finds all video files within each course
 4. **Metadata Extraction** (in priority order):
-   - Checks for `tvshow.nfo` (course) and `[filename].nfo` (lesson) files
+   - Checks for any `.nfo` file in the directory (flexible naming)
    - Extracts embedded metadata using MediaInfo
    - Parses filename to extract lesson title
    - Uses directory name as fallback course name
-5. **Display** - Groups results by course and shows source attribution
+5. **Database Storage** - Stores all metadata with source attribution in SQLite
+6. **Display** - Groups results by course and shows source attribution
 
 ### Supported Video Formats
 
@@ -149,24 +186,61 @@ The scanner recognizes standard Kodi/Jellyfin NFO files:
 </episodedetails>
 ```
 
-## Configuration
+## Database Schema
 
-Edit the `lib_paths` list in `main()` function to scan additional directories:
+The SQLite database includes three tables:
 
-```python
-lib_paths = [
-    Path('/Volumes/learning').expanduser(),
-    Path('/path/to/another/library').expanduser(),
-]
+**courses** table:
+- `id` - Unique identifier
+- `name` - Course title
+- `directory_path` - Full path to course directory
+- `description` - Course description
+- `instructor` - Primary instructor name
+- `year` - Year published
+- `metadata_source` - Where metadata came from (NFO, file-tags, dir-name)
+- `created_at`, `updated_at` - Timestamps
+
+**lessons** table:
+- `id` - Unique identifier
+- `course_id` - Foreign key to courses
+- `title` - Lesson title
+- `file_path` - Full path to video file
+- `file_name` - Video filename
+- `duration_seconds` - Video duration in seconds
+- `description` - Lesson description
+- `metadata_source` - Where metadata came from
+- `created_at`, `updated_at` - Timestamps
+
+**metadata_sources** table:
+- Tracks granular source information for each metadata field
+- Useful for understanding which fields need manual assignment
+
+## Database Queries
+
+You can query the database directly:
+
+```bash
+# List all courses
+sqlite3 library.db "SELECT name, instructor, year FROM courses;"
+
+# List lessons for a specific course
+sqlite3 library.db "SELECT title, duration_seconds FROM lessons WHERE course_id = 1;"
+
+# Find lessons without titles
+sqlite3 library.db "SELECT file_name FROM lessons WHERE title IS NULL;"
+
+# Get completion statistics
+sqlite3 library.db "SELECT COUNT(*) FROM lessons WHERE title IS NOT NULL;"
 ```
 
 ## Future Features
 
-- Interactive metadata editor UI
-- Automatic NFO file generation for missing metadata
+- Interactive metadata editor UI for updating database
+- Automatic NFO file generation from database
 - Directory reorganization and file renaming
-- Jellyfin integration for direct import
-- Web-based dashboard
+- Jellyfin API integration for direct import
+- Web-based dashboard for browsing library
+- Export to various metadata formats (YAML, JSON)
 - Configurable filename parsing patterns
 
 ## Troubleshooting
@@ -179,12 +253,18 @@ lib_paths = [
 - Add a `<runtime>` tag to the `.nfo` file (in minutes).
 
 **Course name shows "[dirname]-fromdir"**
-- No `tvshow.nfo` file found in the course directory.
-- Create a `tvshow.nfo` file with proper course metadata.
+- No `.nfo` file found in the course directory.
+- Create any `.nfo` file (e.g., `tvshow.nfo`) with proper course metadata.
 
 **Lessons not found**
 - Check that files use supported video extensions (.mp4, .mkv, .avi, etc.)
 - Verify files are in the library directory.
+- Check filesystem permissions for the library path.
+
+**Database file not found**
+- The database is created automatically on first scan.
+- Check that you have write permissions in the current directory.
+- Use `--db=/path/to/database.db` to specify a custom location.
 
 ## License
 
