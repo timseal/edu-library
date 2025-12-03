@@ -20,10 +20,13 @@ source venv/bin/activate
 # 3. Install dependencies (including mediainfo system package)
 pip install -r requirements.txt
 
-# 4a. Run the GUI
+# 4a. Run the GUI (Tkinter - built-in, minimal dependencies)
 python eduscan-gui.py
 
-# 4b. Or run the command-line scanner
+# 4b. Or run the Qt GUI (modern interface with advanced features)
+python eduscan-qt.py
+
+# 4c. Or run the command-line scanner
 python edu_scanner.py --library-root=/path/to/your/library
 ```
 
@@ -189,23 +192,55 @@ python edu_scanner.py --help
 
 ### Graphical User Interface
 
-The GUI provides an easy, visual way to interact with the scanner.
+Two GUI options are available, choose based on your preference:
 
-#### Launch the GUI
+#### Tkinter GUI (Built-in)
 
 ```bash
 python eduscan-gui.py
 ```
 
-**GUI Features:**
-1. **Browse Library Path** - Click "Browse" button to select your library directory
-2. **Browse Database** - Choose where to save the database file
-3. **Clear Database** - Checkbox to clear database before scanning
-4. **Skip MediaInfo** - Checkbox to skip reading video files (faster on network drives)
-5. **Start Scan** - Begin scanning your library
-6. **View Logs** - Real-time log messages with timestamps
-7. **View Results** - Formatted results of the scan
-8. **Export Results** - Save results to a text file
+**Features:**
+- Built-in to Python, no additional installation required
+- Cross-platform (Windows, macOS, Linux)
+- Real-time logging with timestamps
+- Separate Log and Results tabs
+- Browse dialogs for file selection
+- Clear database and skip MediaInfo checkboxes
+
+**Ideal for:** Systems with minimal dependencies, remote/headless environments
+
+#### PyQt6 GUI (Modern Interface)
+
+```bash
+python eduscan-qt.py
+```
+
+Requires: `pip install PyQt6`
+
+**Features:**
+- Modern, professional interface
+- Grouped configuration sections
+- Real-time logging with timestamps
+- Separate Log and Results tabs
+- Threading for non-blocking operations
+- Enhanced file dialogs
+- Status bar and progress indicator
+
+**Ideal for:** Desktop users who prefer a polished modern interface
+
+**Comparison:**
+
+| Feature | Tkinter | Qt6 |
+|---------|---------|-----|
+| Built-in | ✓ | - |
+| Modern Look | Good | Excellent |
+| Installation | None | `pip install PyQt6` |
+| Performance | Fast | Fast |
+| Logging | ✓ | ✓ |
+| Cross-platform | ✓ | ✓ |
+
+Both GUIs provide the same core functionality with identical scanning capabilities. Choose based on your system's capabilities and preferences.
 
 ### Output
 
