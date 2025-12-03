@@ -218,6 +218,12 @@ def is_video_file(path: Path) -> bool:
     return path.suffix.lower() in video_extensions
 
 
+def find_nfo_file(directory: Path, pattern: str = '*.nfo') -> Optional[Path]:
+    """Find first NFO file matching pattern in directory"""
+    nfo_files = list(directory.glob(pattern))
+    return nfo_files[0] if nfo_files else None
+
+
 def scan_directory(library_path: Path) -> List[Course]:
     """
     Scan a library directory for courses and lessons.
@@ -246,9 +252,9 @@ def scan_directory(library_path: Path) -> List[Course]:
         course = Course(dirpath=course_dir, name=f"{course_name}-fromdir")
         course.source.directory_name = True
 
-        # Try to load tvshow.nfo
-        tvshow_nfo = course_dir / 'tvshow.nfo'
-        if tvshow_nfo.exists():
+        # Try to load any tvshow.nfo or course-level NFO file
+        tvshow_nfo = find_nfo_file(course_dir)
+        if tvshow_nfo:
             nfo_data = parse_tvshow_nfo(tvshow_nfo)
             if nfo_data and nfo_data.get('name'):
                 course.name = nfo_data['name']
@@ -266,18 +272,28 @@ def scan_directory(library_path: Path) -> List[Course]:
         for video_path in sorted(video_files):
             lesson = Lesson(filepath=video_path, filename=video_path.name)
 
-            # Try to get metadata from episode.nfo in same directory
-            nfo_path = video_path.parent / f"{video_path.stem}.nfo"
-            if nfo_path.exists():
-                nfo_data = parse_episode_nfo(nfo_path)
-                if nfo_data:
-                    if nfo_data.get('title'):
-                        lesson.title = nfo_data['title']
-                        lesson.source.nfo = True
-                    if nfo_data.get('duration') and not lesson.duration:
-                        lesson.duration = nfo_data['duration']
-                    if nfo_data.get('description'):
-                        lesson.description = nfo_data['description']
+            # Try to get metadata from any NFO file in same directory matching video name
+            video_dir = video_path.parent
+            
+            # First try exact match with video filename stem
+            nfo_candidates = [video_dir / f"{video_path.stem}.nfo"]
+            
+            # If no exact match, look for any NFO file in the directory
+            if not nfo_candidates[0].exists():
+                nfo_candidates = list(video_dir.glob('*.nfo'))
+            
+            for nfo_path in nfo_candidates:
+                if nfo_path.exists():
+                    nfo_data = parse_episode_nfo(nfo_path)
+                    if nfo_data:
+                        if nfo_data.get('title'):
+                            lesson.title = nfo_data['title']
+                            lesson.source.nfo = True
+                        if nfo_data.get('duration') and not lesson.duration:
+                            lesson.duration = nfo_data['duration']
+                        if nfo_data.get('description'):
+                            lesson.description = nfo_data['description']
+                    break  # Use first found NFO file
 
             # Try to extract metadata from video file
             if MediaInfo:
