@@ -49,7 +49,9 @@ Then displays everything organized by course with clear source attribution for e
 
 ## Features
 
-- **Recursive directory scanning** - Finds all courses and lessons in your library
+- **Deep directory scanning** - Recursively scans all subdirectories to find courses at any depth
+- **Smart course detection** - Any directory containing video files is recognized as a course
+- **Flexible organization** - Supports nested structures (e.g., `Category/Course/Season/Videos`)
 - **Multi-source metadata extraction** - Prioritizes: NFO files → embedded tags → filenames → directory names
 - **Flexible NFO naming** - Finds any `.nfo` file in course/lesson directories, not just specific names
 - **Intelligent filename parsing** - Extracts lesson titles from common formats:
@@ -295,16 +297,39 @@ edu-library/
 
 ### Scanning Process
 
-1. **Directory Traversal** - Recursively walks through library directories using `os.walk()`
-2. **Course Detection** - Identifies directories containing video files as courses
-3. **Lesson Discovery** - Finds all video files within each course
-4. **Metadata Extraction** (in priority order):
+1. **Deep Directory Traversal** - Recursively walks through all directories at any depth using `os.walk()`
+2. **Smart Course Detection** - Identifies ANY directory containing video files as a course (not limited to top-level)
+3. **Flexible Organization** - Supports nested structures like `Category/Course/Season/Videos`
+4. **Lesson Discovery** - Finds all video files within each detected course directory
+5. **Metadata Extraction** (in priority order):
    - Checks for any `.nfo` file in the directory (flexible naming)
-   - Extracts embedded metadata using MediaInfo
+   - Extracts embedded metadata using MediaInfo (unless `--skip-media-info` is used)
    - Parses filename to extract lesson title
    - Uses directory name as fallback course name
-5. **Database Storage** - Stores all metadata with source attribution in SQLite
-6. **Display** - Groups results by course and shows source attribution
+6. **Database Storage** - Stores all metadata with source attribution in SQLite
+7. **Display** - Groups results by course and shows source attribution
+
+### Example Directory Structure
+
+```
+Library/
+├── Course1/              (recognized as course with direct videos)
+│   ├── video1.mp4
+│   └── video2.mp4
+├── Category/
+│   ├── Course2/          (recognized as course)
+│   │   ├── Season 01/    (recognized as course - contains videos)
+│   │   │   ├── video1.mp4
+│   │   │   └── video2.mp4
+│   │   └── Season 02/    (recognized as course - contains videos)
+│   │       ├── video3.mp4
+│   │       └── video4.mp4
+│   └── Course3/
+│       └── Lessons/      (recognized as course - contains videos)
+│           └── lesson1.mp4
+```
+
+All directories containing video files are recognized as courses, regardless of depth or nesting.
 
 ### Supported Video Formats
 

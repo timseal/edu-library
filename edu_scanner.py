@@ -252,7 +252,8 @@ def find_nfo_file(directory: Path, pattern: str = '*.nfo') -> Optional[Path]:
 def scan_directory(library_path: Path, skip_media_info: bool = False) -> List[Course]:
     """
     Scan a library directory for courses and lessons.
-    A course is a directory containing video files.
+    A course is any directory (at any depth) that contains video files.
+    Directories are traversed recursively to find all courses.
     
     Args:
         library_path: Root directory to scan
@@ -264,29 +265,27 @@ def scan_directory(library_path: Path, skip_media_info: bool = False) -> List[Co
         print(f"Warning: Library path does not exist: {library_path}", file=sys.stderr)
         return courses
 
-    # Iterate through top-level directories
-    for course_dir in sorted(library_path.iterdir()):
-        if not course_dir.is_dir():
-            continue
-
-        # Find all video files in this course directory (recursively, but only video files)
+    # Recursively find all directories and check if they contain video files
+    for root, dirs, files in os.walk(library_path):
+        root_path = Path(root)
+        
+        # Check if this directory contains video files
         video_files = []
-        for root, dirs, files in os.walk(course_dir):
-            for file in files:
-                filepath = Path(root) / file
-                if is_video_file(filepath):
-                    video_files.append(filepath)
-
+        for file in files:
+            filepath = root_path / file
+            if is_video_file(filepath):
+                video_files.append(filepath)
+        
         if not video_files:
             continue  # Skip directories with no video files
 
-        # Create course object
-        course_name = course_dir.name
-        course = Course(dirpath=course_dir, name=f"{course_name}-fromdir")
+        # Create course object for this directory
+        course_name = root_path.name
+        course = Course(dirpath=root_path, name=f"{course_name}-fromdir")
         course.source.directory_name = True
 
         # Try to load any tvshow.nfo or course-level NFO file
-        tvshow_nfo = find_nfo_file(course_dir)
+        tvshow_nfo = find_nfo_file(root_path)
         if tvshow_nfo:
             nfo_data = parse_tvshow_nfo(tvshow_nfo)
             if nfo_data and nfo_data.get('name'):
