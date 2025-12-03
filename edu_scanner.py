@@ -249,10 +249,14 @@ def find_nfo_file(directory: Path, pattern: str = '*.nfo') -> Optional[Path]:
     return nfo_files[0] if nfo_files else None
 
 
-def scan_directory(library_path: Path) -> List[Course]:
+def scan_directory(library_path: Path, skip_media_info: bool = False) -> List[Course]:
     """
     Scan a library directory for courses and lessons.
     A course is a directory containing video files.
+    
+    Args:
+        library_path: Root directory to scan
+        skip_media_info: If True, skip reading MediaInfo from video files (faster on network drives)
     """
     courses = []
 
@@ -325,7 +329,7 @@ def scan_directory(library_path: Path) -> List[Course]:
                     break  # Use first found NFO file
 
             # Try to extract metadata from video file
-            if MediaInfo:
+            if MediaInfo and not skip_media_info:
                 media_data = extract_media_metadata(video_path)
                 if media_data:
                     if not lesson.duration and media_data.get('duration'):
@@ -449,6 +453,11 @@ def main():
         action='store_true',
         help='Clear database before scanning'
     )
+    parser.add_argument(
+        '--skip-media-info',
+        action='store_true',
+        help='Skip reading MediaInfo from video files (faster on network drives, uses NFO and filename only)'
+    )
     args = parser.parse_args()
 
     lib_path = args.library_root.expanduser().resolve()
@@ -466,7 +475,7 @@ def main():
     print("-" * 80)
     
     start_time = time.time()
-    courses = scan_directory(lib_path)
+    courses = scan_directory(lib_path, skip_media_info=args.skip_media_info)
     elapsed = time.time() - start_time
     
     all_courses.extend(courses)

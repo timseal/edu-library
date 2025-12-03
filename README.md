@@ -170,6 +170,18 @@ python edu_scanner.py --db=/path/to/custom.db
 python edu_scanner.py --clear-db
 ```
 
+#### Faster Scanning on Network Drives
+
+If your library is on a network drive and scanning is slow, skip the MediaInfo extraction:
+
+```bash
+python edu_scanner.py --skip-media-info
+```
+
+This uses only NFO files and filename parsing for metadata, which is much faster on network drives. You'll still get titles and descriptions from NFO files, but duration data will only come from NFO files (not from video file inspection).
+
+**Note:** Requires NFO files for best results. Without `--skip-media-info`, the scanner reads metadata directly from video files, which is slower on network drives but more comprehensive.
+
 #### Get Help
 
 ```bash
