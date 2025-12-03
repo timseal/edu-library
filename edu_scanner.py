@@ -51,12 +51,17 @@ class Lesson:
         """Format duration as HH:MM:SS"""
         if self.duration is None:
             return "Unknown"
-        hours = self.duration // 3600
-        minutes = (self.duration % 3600) // 60
-        seconds = self.duration % 60
-        if hours > 0:
-            return f"{hours}:{minutes:02d}:{seconds:02d}"
-        return f"{minutes}:{seconds:02d}"
+        try:
+            # Ensure duration is an integer
+            dur = int(self.duration) if not isinstance(self.duration, int) else self.duration
+            hours = dur // 3600
+            minutes = (dur % 3600) // 60
+            seconds = dur % 60
+            if hours > 0:
+                return f"{hours}:{minutes:02d}:{seconds:02d}"
+            return f"{minutes}:{seconds:02d}"
+        except (TypeError, ValueError) as e:
+            return "Unknown"
 
     def is_complete(self) -> bool:
         """Check if lesson has essential metadata"""
@@ -112,7 +117,9 @@ def parse_tvshow_nfo(nfo_path: Path) -> Optional[Dict]:
 
         return metadata
     except Exception as e:
-        print(f"Warning: Failed to parse {nfo_path}: {e}", file=sys.stderr)
+        import traceback
+        tb_line = traceback.extract_tb(e.__traceback__)[-1].lineno if e.__traceback__ else 'unknown'
+        print(f"Warning: Failed to parse {nfo_path} (line {tb_line}): {e}", file=sys.stderr)
         return None
 
 
@@ -142,7 +149,9 @@ def parse_episode_nfo(nfo_path: Path) -> Optional[Dict]:
 
         return metadata
     except Exception as e:
-        print(f"Warning: Failed to parse {nfo_path}: {e}", file=sys.stderr)
+        import traceback
+        tb_line = traceback.extract_tb(e.__traceback__)[-1].lineno if e.__traceback__ else 'unknown'
+        print(f"Warning: Failed to parse {nfo_path} (line {tb_line}): {e}", file=sys.stderr)
         return None
 
 
@@ -166,14 +175,28 @@ def extract_media_metadata(video_path: Path) -> Optional[Dict]:
         for track in media_info.tracks:
             if track.track_type == 'General':
                 if track.duration:
-                    metadata['duration'] = int(track.duration / 1000)  # Convert ms to seconds
+                    try:
+                        # Handle both int and string duration values
+                        duration_val = track.duration
+                        if isinstance(duration_val, str):
+                            duration_val = float(duration_val)
+                        metadata['duration'] = int(duration_val / 1000)  # Convert ms to seconds
+                    except (TypeError, ValueError) as e:
+                        print(f"Warning: Failed to convert duration for {video_path} (value: {track.duration}, error: {e})", file=sys.stderr)
                 if track.title:
                     metadata['title'] = track.title
                 break
 
         return metadata
     except Exception as e:
-        print(f"Warning: Failed to extract metadata from {video_path}: {e}", file=sys.stderr)
+        import traceback
+        tb_lines = traceback.format_exc().split('\n')
+        error_line = None
+        for line in tb_lines:
+            if 'line' in line:
+                error_line = line.strip()
+                break
+        print(f"Warning: Failed to extract metadata from {video_path}: {e} ({error_line if error_line else 'unknown line'})", file=sys.stderr)
         return None
 
 
