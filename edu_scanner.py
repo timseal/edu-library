@@ -481,41 +481,37 @@ def main():
     all_courses.extend(courses)
     
     if courses:
-        print(f"Found {len(courses)} courses in {elapsed:.2f}s")
+        print(f"Found {len(courses)} courses in {elapsed:.2f}s\n")
     else:
         print(f"No courses found (scanned in {elapsed:.2f}s)")
+        db.close()
+        return
 
-    # Store in database
-    if all_courses:
-        print("\nStoring in database...")
-        db_start = time.time()
-        for course in all_courses:
-            course_dict = asdict(course)
-            course_id = db.add_course(course_dict)
-            
-            for lesson in course.lessons:
-                lesson_dict = asdict(lesson)
-                db.add_lesson(course_id, lesson_dict)
+    # Store in database and display each course as it's processed
+    db_start = time.time()
+    for i, course in enumerate(all_courses, 1):
+        course_dict = asdict(course)
+        course_id = db.add_course(course_dict)
         
-        db_elapsed = time.time() - db_start
-        print(f"Stored {len(all_courses)} courses in {db_elapsed:.2f}s")
+        for lesson in course.lessons:
+            lesson_dict = asdict(lesson)
+            db.add_lesson(course_id, lesson_dict)
         
-        # Display results grouped by course
-        for course in all_courses:
-            print(format_course_output(course))
-        
-        # Print summary
-        print_summary(all_courses)
-        
-        # Print database statistics
-        stats = db.get_statistics()
-        print(f"\nDatabase Statistics:")
-        print(f"  Courses in database: {stats['total_courses']}")
-        print(f"  Lessons in database: {stats['total_lessons']}")
-        print(f"  Lessons with titles: {stats['lessons_with_title']}")
-        
-    else:
-        print("\nNo courses found in library directory.")
+        # Print course info immediately after processing
+        print(format_course_output(course))
+    
+    db_elapsed = time.time() - db_start
+    print(f"Stored {len(all_courses)} courses in {db_elapsed:.2f}s")
+    
+    # Print summary
+    print_summary(all_courses)
+    
+    # Print database statistics
+    stats = db.get_statistics()
+    print(f"\nDatabase Statistics:")
+    print(f"  Courses in database: {stats['total_courses']}")
+    print(f"  Lessons in database: {stats['total_lessons']}")
+    print(f"  Lessons with titles: {stats['lessons_with_title']}")
     
     db.close()
 
