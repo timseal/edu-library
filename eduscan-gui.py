@@ -39,6 +39,9 @@ class ScannerGUI:
         main_frame.columnconfigure(0, weight=1)
         main_frame.rowconfigure(12, weight=1)
         
+        # Create notebook (tabbed interface) for log and results
+        self.notebook = ttk.Notebook(main_frame)
+        
         # Title
         title_label = ttk.Label(main_frame, text='Educational Video Library Scanner', 
                                 font=('Arial', 16, 'bold'))
@@ -103,14 +106,23 @@ class ScannerGUI:
         separator3 = ttk.Separator(main_frame, orient='horizontal')
         separator3.grid(row=10, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         
-        # Output text area
-        output_label = ttk.Label(main_frame, text='Results:')
-        output_label.grid(row=11, column=0, columnspan=3, sticky=tk.W, pady=(0, 5))
+        # Output text area with tabs
+        self.notebook.grid(row=11, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
         
-        self.output_text = scrolledtext.ScrolledText(main_frame, height=25, width=120, wrap=tk.WORD)
-        self.output_text.grid(row=12, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+        # Log tab
+        log_frame = ttk.Frame(self.notebook)
+        self.notebook.add(log_frame, text='Log')
         
-        # Make output text read-only
+        self.log_text = scrolledtext.ScrolledText(log_frame, height=25, width=120, wrap=tk.WORD)
+        self.log_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.log_text.config(state=tk.DISABLED)
+        
+        # Results tab
+        results_frame = ttk.Frame(self.notebook)
+        self.notebook.add(results_frame, text='Results')
+        
+        self.output_text = scrolledtext.ScrolledText(results_frame, height=25, width=120, wrap=tk.WORD)
+        self.output_text.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
         self.output_text.config(state=tk.DISABLED)
     
     def browse_library(self):
@@ -138,6 +150,24 @@ class ScannerGUI:
             messagebox.showerror('Input Error', 'Please specify both library path and database path')
             return
         
+        # Clear log and results
+        self.log_text.config(state=tk.NORMAL)
+        self.log_text.delete('1.0', tk.END)
+        self.log_text.config(state=tk.DISABLED)
+        
+        self.output_text.config(state=tk.NORMAL)
+        self.output_text.delete('1.0', tk.END)
+        self.output_text.config(state=tk.DISABLED)
+        
+        self.log('Starting scan...')
+        self.log(f'Library: {library_path}')
+        self.log(f'Database: {db_path}')
+        if self.clear_db_var.get():
+            self.log('Database will be cleared')
+        if self.skip_media_info_var.get():
+            self.log('MediaInfo will be skipped (faster mode)')
+        self.log('-' * 80)
+        
         self.scanning = True
         self.scan_button.config(state=tk.DISABLED)
         self.stop_button.config(state=tk.NORMAL)
@@ -161,7 +191,8 @@ class ScannerGUI:
         self.scan_button.config(state=tk.NORMAL)
         self.stop_button.config(state=tk.DISABLED)
         self.progress.stop()
-        self.status_var.set('Scan cancelled by user')
+        self.log('Scan cancelled by user')
+        self.update_status('Scan cancelled by user')
     
     def run_scan(self, library_path, db_path, clear_db, skip_media_info):
         """Run scan in background"""
@@ -170,18 +201,26 @@ class ScannerGUI:
             db = LibraryDatabase(Path(db_path))
             
             if clear_db:
+                self.log('Clearing database...')
                 db.clear_all()
+                self.log('Database cleared')
             
+            self.log(f'Scanning {lib_path}...')
             self.update_status(f'Scanning {lib_path}...')
             
             # Perform scan
             courses = scan_directory(lib_path, skip_media_info=skip_media_info)
+            self.log(f'Found {len(courses)} courses')
             
             if courses:
+                self.log(f'Storing in database...')
                 db_start = datetime.now()
-                for course in courses:
+                for i, course in enumerate(courses, 1):
                     if not self.scanning:
+                        self.log('Scan stopped by user')
                         break
+                    
+                    self.log(f'Processing course {i}/{len(courses)}: {course.name} ({len(course.lessons)} lessons)')
                     
                     course_dict = {
                         'name': course.name,
@@ -250,10 +289,13 @@ class ScannerGUI:
                 results += f"Lessons with Titles: {stats['lessons_with_title']}\n"
                 
                 self.update_output(results)
+                self.log('-' * 80)
+                self.log(f'Scan complete: {len(courses)} courses, {sum(len(c.lessons) for c in courses)} lessons')
                 self.update_status(f'✓ Scan complete: {len(courses)} courses, {sum(len(c.lessons) for c in courses)} lessons')
                 self.export_button.config(state=tk.NORMAL)
             else:
                 self.update_output("No courses found in the specified directory.")
+                self.log('No courses found')
                 self.update_status('No courses found')
             
             db.close()
@@ -261,6 +303,7 @@ class ScannerGUI:
         except Exception as e:
             error_msg = f"ERROR: {str(e)}\n\n{type(e).__name__}"
             self.update_output(error_msg)
+            self.log(f'ERROR: {str(e)}')
             self.update_status(f'Error: {str(e)}')
         
         finally:
@@ -283,6 +326,18 @@ class ScannerGUI:
     def update_status(self, text):
         """Update status label safely from thread"""
         self.root.after(0, self.status_var.set, text)
+    
+    def log(self, message):
+        """Add a log message with timestamp"""
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        self.root.after(0, self._do_log, f"[{timestamp}] {message}")
+    
+    def _do_log(self, message):
+        """Actually write to log"""
+        self.log_text.config(state=tk.NORMAL)
+        self.log_text.insert(tk.END, message + '\n')
+        self.log_text.see(tk.END)
+        self.log_text.config(state=tk.DISABLED)
     
     def export_results(self):
         """Export results to file"""

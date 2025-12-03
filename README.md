@@ -21,7 +21,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 # 4a. Run the GUI
-python gui.py
+python eduscan-gui.py
 
 # 4b. Or run the command-line scanner
 python edu_scanner.py --library-root=/path/to/your/library
@@ -195,16 +195,18 @@ The GUI provides an easy, visual way to interact with the scanner.
 #### Launch the GUI
 
 ```bash
-python gui.py
+python eduscan-gui.py
 ```
 
 **GUI Features:**
 1. **Browse Library Path** - Click "Browse" button to select your library directory
 2. **Browse Database** - Choose where to save the database file
 3. **Clear Database** - Checkbox to clear database before scanning
-4. **Start Scan** - Begin scanning your library
-5. **View Results** - Results appear in the text area
-6. **Export Results** - Save results to a text file
+4. **Skip MediaInfo** - Checkbox to skip reading video files (faster on network drives)
+5. **Start Scan** - Begin scanning your library
+6. **View Logs** - Real-time log messages with timestamps
+7. **View Results** - Formatted results of the scan
+8. **Export Results** - Save results to a text file
 
 ### Output
 
