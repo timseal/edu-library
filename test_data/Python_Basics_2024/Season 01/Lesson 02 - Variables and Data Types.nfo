@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<episodedetails>
+    <title>Variables and Data Types</title>
+    <plot>Understanding Python variables, integers, floats, strings, and type conversion.</plot>
+    <season>1</season>
+    <episode>2</episode>
+    <aired>2024-01-22</aired>
+    <runtime>32</runtime>
+</episodedetails>

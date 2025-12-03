@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<tvshow>
+    <title>Python Fundamentals</title>
+    <plot>Learn Python programming from basics to advanced concepts including data structures, functions, and object-oriented programming.</plot>
+    <premiered>2024-01-15</premiered>
+    <year>2024</year>
+    <studio>TechEdu Online</studio>
+    <genre>Programming</genre>
+    <genre>Python</genre>
+    <director>Dr. Sarah Johnson</director>
+    <actor>
+        <name>Dr. Sarah Johnson</name>
+        <role>Instructor</role>
+    </actor>
+    <status>ended</status>
+</tvshow>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<episodedetails>
+    <title>Introduction to Python</title>
+    <plot>Getting started with Python: installation, first program, and basic syntax.</plot>
+    <season>1</season>
+    <episode>1</episode>
+    <aired>2024-01-15</aired>
+    <runtime>25</runtime>
+</episodedetails>

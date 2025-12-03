@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<tvshow>
+    <title>Advanced JavaScript</title>
+    <plot>Master advanced JavaScript concepts including async/await, closures, and modern ES6+ features.</plot>
+    <premiered>2023-06-01</premiered>
+    <year>2023</year>
+    <studio>Code Masters</studio>
+    <genre>Programming</genre>
+    <genre>Web Development</genre>
+    <director>Alex Johnson</director>
+</tvshow>
