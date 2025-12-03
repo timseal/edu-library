@@ -6,6 +6,27 @@ A Python tool to scan, organize, and catalog your personal collection of educati
 
 This tool helps you organize scattered educational videos across multiple directories into a well-structured library that Jellyfin can recognize and display properly. It extracts metadata from multiple sources (NFO files, video file tags, filenames) and presents a comprehensive catalog of your courses and lessons.
 
+### Quick Start
+
+```bash
+# 1. Clone and setup
+git clone https://github.com/timseal/edu-library.git
+cd edu-library
+
+# 2. Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Install dependencies (including mediainfo system package)
+pip install -r requirements.txt
+
+# 4a. Run the GUI
+python gui.py
+
+# 4b. Or run the command-line scanner
+python edu_scanner.py --library-root=/path/to/your/library
+```
+
 ### Problem It Solves
 
 - **Scattered content**: Educational videos stored in various directories
@@ -44,16 +65,86 @@ Then displays everything organized by course with clear source attribution for e
 - Python 3.7+
 - `pymediainfo` - for extracting video file metadata
 - `lxml` - for parsing NFO XML files
+- `PySimpleGUI` - for the graphical user interface
+
+### System Dependencies
+
+#### macOS
+
+```bash
+# Install mediainfo (required for pymediainfo)
+brew install mediainfo
+```
+
+#### Linux (Ubuntu/Debian)
+
+```bash
+# Install mediainfo
+sudo apt-get install mediainfo
+
+# Install Python development headers (may be needed)
+sudo apt-get install python3-dev
+```
+
+#### Linux (Fedora/RHEL)
+
+```bash
+# Install mediainfo
+sudo dnf install mediainfo
+```
 
 ## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/timseal/edu-library.git
+cd edu-library
+```
+
+### 2. Create a Virtual Environment (Recommended)
+
+```bash
+# Create virtual environment
+python3 -m venv venv
+
+# Activate it
+source venv/bin/activate  # On macOS/Linux
+# or
+venv\Scripts\activate  # On Windows (if you use it)
+```
+
+### 3. Install Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
+### 4. Verify Installation
+
+```bash
+# Test command-line scanner
+python edu_scanner.py --help
+
+# Test GUI
+python gui.py
+```
+
+## Dependencies Explained
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `pymediainfo` | ≥6.0.0 | Extracts metadata from video files (duration, codecs, etc.) |
+| `lxml` | ≥4.9.0 | Parses NFO XML files for metadata |
+| `PySimpleGUI` | ≥4.60.0 | Creates cross-platform graphical interface |
+
 ## Usage
 
-### Basic Scan
+### Command-Line Interface
+
+The command-line scanner is ideal for automation, scripting, and server environments.
+
+#### Basic Scan
 
 ```bash
 python edu_scanner.py
@@ -61,29 +152,47 @@ python edu_scanner.py
 
 This scans `/Volumes/learning` (the default library directory) and stores results in `library.db`.
 
-### Custom Library Path
+#### Custom Library Path
 
 ```bash
 python edu_scanner.py --library-root=/path/to/library
 ```
 
-### Using a Different Database
+#### Using a Different Database
 
 ```bash
 python edu_scanner.py --db=/path/to/custom.db
 ```
 
-### Clear Database Before Scanning
+#### Clear Database Before Scanning
 
 ```bash
 python edu_scanner.py --clear-db
 ```
 
-### Get Help
+#### Get Help
 
 ```bash
 python edu_scanner.py --help
 ```
+
+### Graphical User Interface
+
+The GUI provides an easy, visual way to interact with the scanner.
+
+#### Launch the GUI
+
+```bash
+python gui.py
+```
+
+**GUI Features:**
+1. **Browse Library Path** - Click "Browse" button to select your library directory
+2. **Browse Database** - Choose where to save the database file
+3. **Clear Database** - Checkbox to clear database before scanning
+4. **Start Scan** - Begin scanning your library
+5. **View Results** - Results appear in the text area
+6. **Export Results** - Save results to a text file
 
 ### Output
 
