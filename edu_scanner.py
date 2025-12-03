@@ -10,7 +10,7 @@ import sys
 import time
 import argparse
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, asdict
 from typing import Dict, List, Optional, Tuple
 from xml.etree import ElementTree as ET
 from collections import defaultdict
@@ -19,6 +19,8 @@ try:
     from pymediainfo import MediaInfo
 except ImportError:
     MediaInfo = None
+
+from database import LibraryDatabase
 
 
 # ============================================================================
@@ -413,9 +415,27 @@ def main():
         default=Path('/Volumes/learning'),
         help='Root path to library directory (default: /Volumes/learning)'
     )
+    parser.add_argument(
+        '--db',
+        type=Path,
+        default=Path('library.db'),
+        help='Path to SQLite database file (default: library.db)'
+    )
+    parser.add_argument(
+        '--clear-db',
+        action='store_true',
+        help='Clear database before scanning'
+    )
     args = parser.parse_args()
 
     lib_path = args.library_root.expanduser().resolve()
+    
+    # Initialize database
+    db = LibraryDatabase(args.db)
+    
+    if args.clear_db:
+        print("Clearing database...")
+        db.clear_all()
     
     all_courses = []
 
@@ -433,15 +453,39 @@ def main():
     else:
         print(f"No courses found (scanned in {elapsed:.2f}s)")
 
-    # Display results grouped by course
+    # Store in database
     if all_courses:
+        print("\nStoring in database...")
+        db_start = time.time()
+        for course in all_courses:
+            course_dict = asdict(course)
+            course_id = db.add_course(course_dict)
+            
+            for lesson in course.lessons:
+                lesson_dict = asdict(lesson)
+                db.add_lesson(course_id, lesson_dict)
+        
+        db_elapsed = time.time() - db_start
+        print(f"Stored {len(all_courses)} courses in {db_elapsed:.2f}s")
+        
+        # Display results grouped by course
         for course in all_courses:
             print(format_course_output(course))
         
         # Print summary
         print_summary(all_courses)
+        
+        # Print database statistics
+        stats = db.get_statistics()
+        print(f"\nDatabase Statistics:")
+        print(f"  Courses in database: {stats['total_courses']}")
+        print(f"  Lessons in database: {stats['total_lessons']}")
+        print(f"  Lessons with titles: {stats['lessons_with_title']}")
+        
     else:
-        print("\nNo courses found in any library directories.")
+        print("\nNo courses found in library directory.")
+    
+    db.close()
 
 
 if __name__ == '__main__':
