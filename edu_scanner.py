@@ -240,9 +240,13 @@ def scan_directory(library_path: Path) -> List[Course]:
         if not course_dir.is_dir():
             continue
 
-        # Find all video files in this course directory (including subdirectories)
-        video_files = list(course_dir.rglob('*'))
-        video_files = [f for f in video_files if f.is_file() and is_video_file(f)]
+        # Find all video files in this course directory (recursively, but only video files)
+        video_files = []
+        for root, dirs, files in os.walk(course_dir):
+            for file in files:
+                filepath = Path(root) / file
+                if is_video_file(filepath):
+                    video_files.append(filepath)
 
         if not video_files:
             continue  # Skip directories with no video files
