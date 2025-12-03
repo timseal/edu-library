@@ -37,7 +37,7 @@ class ScannerGUI:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(7, weight=1)
+        main_frame.rowconfigure(12, weight=1)
         
         # Title
         title_label = ttk.Label(main_frame, text='Educational Video Library Scanner', 
@@ -67,13 +67,17 @@ class ScannerGUI:
         ttk.Checkbutton(main_frame, text='Clear database before scanning', 
                        variable=self.clear_db_var).grid(row=4, column=0, columnspan=2, sticky=tk.W, pady=(10, 0))
         
+        self.skip_media_info_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(main_frame, text='Skip MediaInfo (faster on network drives)', 
+                       variable=self.skip_media_info_var).grid(row=5, column=0, columnspan=2, sticky=tk.W, pady=(5, 0))
+        
         # Separator
         separator2 = ttk.Separator(main_frame, orient='horizontal')
-        separator2.grid(row=5, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 10))
+        separator2.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(10, 10))
         
         # Buttons frame
         button_frame = ttk.Frame(main_frame)
-        button_frame.grid(row=6, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+        button_frame.grid(row=7, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         
         self.scan_button = ttk.Button(button_frame, text='Start Scan', command=self.start_scan)
         self.scan_button.pack(side=tk.LEFT, padx=2)
@@ -88,23 +92,23 @@ class ScannerGUI:
         
         # Progress bar
         self.progress = ttk.Progressbar(main_frame, mode='indeterminate')
-        self.progress.grid(row=7, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 5))
+        self.progress.grid(row=8, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 5))
         
         # Status label
         self.status_var = tk.StringVar(value='Ready')
         status_label = ttk.Label(main_frame, textvariable=self.status_var)
-        status_label.grid(row=8, column=0, columnspan=3, sticky=tk.W, pady=(0, 10))
+        status_label.grid(row=9, column=0, columnspan=3, sticky=tk.W, pady=(0, 10))
         
         # Separator
         separator3 = ttk.Separator(main_frame, orient='horizontal')
-        separator3.grid(row=9, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
+        separator3.grid(row=10, column=0, columnspan=3, sticky=(tk.W, tk.E), pady=(0, 10))
         
         # Output text area
         output_label = ttk.Label(main_frame, text='Results:')
-        output_label.grid(row=10, column=0, columnspan=3, sticky=tk.W, pady=(0, 5))
+        output_label.grid(row=11, column=0, columnspan=3, sticky=tk.W, pady=(0, 5))
         
         self.output_text = scrolledtext.ScrolledText(main_frame, height=25, width=120, wrap=tk.WORD)
-        self.output_text.grid(row=11, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+        self.output_text.grid(row=12, column=0, columnspan=3, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
         
         # Make output text read-only
         self.output_text.config(state=tk.DISABLED)
@@ -146,7 +150,7 @@ class ScannerGUI:
         # Start scan in background thread
         self.scan_thread = threading.Thread(
             target=self.run_scan,
-            args=(library_path, db_path, self.clear_db_var.get()),
+            args=(library_path, db_path, self.clear_db_var.get(), self.skip_media_info_var.get()),
             daemon=True
         )
         self.scan_thread.start()
@@ -159,7 +163,7 @@ class ScannerGUI:
         self.progress.stop()
         self.status_var.set('Scan cancelled by user')
     
-    def run_scan(self, library_path, db_path, clear_db):
+    def run_scan(self, library_path, db_path, clear_db, skip_media_info):
         """Run scan in background"""
         try:
             lib_path = Path(library_path).expanduser().resolve()
@@ -171,7 +175,7 @@ class ScannerGUI:
             self.update_status(f'Scanning {lib_path}...')
             
             # Perform scan
-            courses = scan_directory(lib_path)
+            courses = scan_directory(lib_path, skip_media_info=skip_media_info)
             
             if courses:
                 db_start = datetime.now()
