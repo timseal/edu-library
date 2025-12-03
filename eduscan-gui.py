@@ -10,12 +10,15 @@ import threading
 from pathlib import Path
 from datetime import datetime
 import sys
+import json
 
 from edu_scanner import scan_directory
 from database import LibraryDatabase
 
 
 class ScannerGUI:
+    CONFIG_FILE = Path.home() / '.eduscan-gui.config'
+    
     def __init__(self, root):
         self.root = root
         self.root.title('Educational Video Library Scanner')
@@ -25,7 +28,13 @@ class ScannerGUI:
         self.scanning = False
         self.scan_thread = None
         
+        # Load config
+        self.config = self.load_config()
+        
         self.setup_ui()
+        
+        # Save config on close
+        self.root.protocol('WM_DELETE_WINDOW', self.on_close)
     
     def setup_ui(self):
         """Setup the user interface"""
@@ -53,14 +62,14 @@ class ScannerGUI:
         
         # Library Path
         ttk.Label(main_frame, text='Library Root Path:').grid(row=2, column=0, sticky=tk.W, padx=(0, 5))
-        self.library_path_var = tk.StringVar(value='/Volumes/learning')
+        self.library_path_var = tk.StringVar(value=self.config.get('library_path', '/Volumes/learning'))
         library_entry = ttk.Entry(main_frame, textvariable=self.library_path_var, width=50)
         library_entry.grid(row=2, column=1, sticky=(tk.W, tk.E), padx=(0, 5))
         ttk.Button(main_frame, text='Browse', command=self.browse_library).grid(row=2, column=2)
         
         # Database Path
         ttk.Label(main_frame, text='Database Path:').grid(row=3, column=0, sticky=tk.W, padx=(0, 5), pady=(10, 0))
-        self.db_path_var = tk.StringVar(value='library.db')
+        self.db_path_var = tk.StringVar(value=self.config.get('db_path', 'library.db'))
         db_entry = ttk.Entry(main_frame, textvariable=self.db_path_var, width=50)
         db_entry.grid(row=3, column=1, sticky=(tk.W, tk.E), padx=(0, 5), pady=(10, 0))
         ttk.Button(main_frame, text='Browse', command=self.browse_database).grid(row=3, column=2, pady=(10, 0))
@@ -127,9 +136,37 @@ class ScannerGUI:
     
     def browse_library(self):
         """Browse for library directory"""
-        directory = filedialog.askdirectory(title='Select Library Directory')
+        initial_dir = self.library_path_var.get() or str(Path.home())
+        directory = filedialog.askdirectory(title='Select Library Directory', initialdir=initial_dir)
         if directory:
             self.library_path_var.set(directory)
+    
+    def load_config(self):
+        """Load configuration from file"""
+        if self.CONFIG_FILE.exists():
+            try:
+                with open(self.CONFIG_FILE, 'r') as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {}
+    
+    def save_config(self):
+        """Save configuration to file"""
+        config = {
+            'library_path': self.library_path_var.get(),
+            'db_path': self.db_path_var.get(),
+        }
+        try:
+            with open(self.CONFIG_FILE, 'w') as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            print(f"Warning: Failed to save config: {e}", file=sys.stderr)
+    
+    def on_close(self):
+        """Handle window close"""
+        self.save_config()
+        self.root.destroy()
     
     def browse_database(self):
         """Browse for database file"""

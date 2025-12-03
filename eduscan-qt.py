@@ -8,6 +8,7 @@ import sys
 import threading
 from pathlib import Path
 from datetime import datetime
+import json
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QCheckBox, QTabWidget, QTextEdit,
@@ -149,6 +150,7 @@ class ScanWorker(QObject):
 
 class ScannerGUI(QMainWindow):
     """Main GUI window for the scanner"""
+    CONFIG_FILE = Path.home() / '.eduscan-qt.config'
     
     def __init__(self):
         super().__init__()
@@ -157,6 +159,9 @@ class ScannerGUI(QMainWindow):
         
         self.scan_worker = None
         self.scan_thread = None
+        
+        # Load config
+        self.config = self.load_config()
         self.is_scanning = False
         
         self.setup_ui()
@@ -184,7 +189,7 @@ class ScannerGUI(QMainWindow):
         # Library path
         path_layout = QHBoxLayout()
         self.library_path_input = QLineEdit()
-        self.library_path_input.setText('/Volumes/learning')
+        self.library_path_input.setText(self.config.get('library_path', '/Volumes/learning'))
         path_layout.addWidget(self.library_path_input)
         browse_lib_btn = QPushButton('Browse')
         browse_lib_btn.clicked.connect(self.browse_library)
@@ -194,7 +199,7 @@ class ScannerGUI(QMainWindow):
         # Database path
         db_layout = QHBoxLayout()
         self.db_path_input = QLineEdit()
-        self.db_path_input.setText('library.db')
+        self.db_path_input.setText(self.config.get('db_path', 'library.db'))
         db_layout.addWidget(self.db_path_input)
         browse_db_btn = QPushButton('Browse')
         browse_db_btn.clicked.connect(self.browse_database)
@@ -257,6 +262,33 @@ class ScannerGUI(QMainWindow):
         self.results_text.setReadOnly(True)
         self.results_text.setFont(QFont('Courier', 9))
         self.tabs.addTab(self.results_text, 'Results')
+    
+    def load_config(self):
+        """Load configuration from file"""
+        if self.CONFIG_FILE.exists():
+            try:
+                with open(self.CONFIG_FILE, 'r') as f:
+                    return json.load(f)
+            except Exception:
+                pass
+        return {}
+    
+    def save_config(self):
+        """Save configuration to file"""
+        config = {
+            'library_path': self.library_path_input.text(),
+            'db_path': self.db_path_input.text(),
+        }
+        try:
+            with open(self.CONFIG_FILE, 'w') as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            print(f"Warning: Failed to save config: {e}", file=sys.stderr)
+    
+    def closeEvent(self, event):
+        """Handle window close"""
+        self.save_config()
+        super().closeEvent(event)
     
     def browse_library(self):
         """Browse for library directory"""
